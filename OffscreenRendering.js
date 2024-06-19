@@ -2,28 +2,33 @@ var offcanv = new OffscreenCanvas(500, 500);
 var ctx = offcanv.getContext("2d");
 var canv_img = ctx.getImageData(0, 0, 500, 500);
 var canv_data = new Uint32Array(canv_img.data.buffer);
-
+var noise = whiteNoise();
 onmessage = (e) => {
-    postMessage(whiteNoise());
+    postMessage(noise);
+    noise = whiteNoise();
+
 }
 
 function whiteNoise() {
-    let rand1, rand2;
-    let rand3s = [];
-    let arr = [0xFFFF0000, 0xFF00FF00, 0xFF0000FF]; //need four colors to prevent extreme diagonal banding
-    for (var j = 0; j < offcanv.height; j += 1) {
-        for (var i = 0; i < offcanv.width; i += 1) {
-            do {
-                rand2 = Math.floor(Math.random() * 3);
-            } while (rand1 == rand2 || rand2 == rand3s[i]);
-            canv_data[i + 500 * j] = arr[rand2];
-            rand1 = rand2;
-            rand3s[i] = rand2;
-            rand2 = -1;
-        }
-
+    for (var i = 0; i < canv_data.length; i++) {
+        canv_data[i] = 0xFF000000 + Math.random() * 0xFFFFFF;
     }
-    console.log(canv_img);
     ctx.putImageData(canv_img, 0, 0);
     return offcanv.transferToImageBitmap();
+}
+
+function lerp(t, lower, upper) {
+    return lower + (upper - lower) * t;
+}
+
+function splitmix32(a) {        //PRNG generator
+    return function () {
+        a |= 0;
+        a = a + 0x9e3779b9 | 0;
+        let t = a ^ a >>> 16;
+        t = Math.imul(t, 0x21f0aaad);
+        t = t ^ t >>> 15;
+        t = Math.imul(t, 0x735a2d97);
+        return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+    }
 }
