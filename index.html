@@ -3,24 +3,42 @@
 
 <head>
     <script src="Onscreen.js"></script>
+    <script src="jquery-3.7.1.js"></script>
     <link rel="stylesheet" href="project.css">
 </head>
 
 <body onload=initCanvas()>
-    <canvas id="canv" width="500px" height="500px"></canvas><br>
-    <label for="anim">animate =></label>
-    <input type="checkbox" id="anim" width="50px" height="50px"><br>
+    <canvas id="canv"></canvas><br>
+    <div id="settings">
+        <input type="radio" id="goodNoise" name="noiseType" value="goodNoise" checked="checked">
+        <label for="goodNoise"> 1D Smooth Noise</label>
+        <input type="radio" id="whiteNoise" name="noiseType" value="whiteNoise">
+        <label for="whiteNoise"> White Noise</label> <br>
 
-    <input type="range" id="framerate" min="1" max="90" value="45" style="visibility: visible;">
-    <label id="rate_label" for="framerate">45 fps</label><br>
+        <label for="anim">animate =></label>
+        <input type="checkbox" id="anim" width="50px" height="50px"><br>
 
-    <label for="seed">Seed </label>
-    <input type="text" id="seed"><br>
-    <form onsubmit="newParams()">
-        <label for=" resX">Resolution </label>
-        <input type="text" id="resX" size="4" placeholder="500"> x <input type="text" id="resY" size="4"
-            placeholder="500"> px
-        <input type="submit">
-    </form>
+        <input type="range" id="framerate" min="1" max="90" value="45" style="visibility: visible;">
+        <label id="rate_label" for="framerate">45 fps</label><br>
+
+        <label for="seed">Seed </label>
+        <input type="text" id="seed" placeholder="0"><br>
+
+        <label for="resX">Resolution </label>
+        <input type="text" id="resX" size="4" placeholder="250"> x <input type="text" id="resY" size="4"
+            placeholder="250" disabled>
+        <label for="resY">px</label><br>
+
+        <label for="grid">Grid Size</label>
+        <input type="text" id="grid" size="3" placeholder="10">
+        <label for="grid">points</label><br>
+
+        <label for="period">Period</label>
+        <input type="text" id="period" size="4" placeholder="250">
+        <label for="period">px</label><br>
+    </div>
+
+
+
 
 </html>

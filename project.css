@@ -1,0 +1,16 @@
+body {
+    background-color: antiquewhite;
+}
+
+canvas {
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+
+
+}
+
+#settings {
+    position: fixed;
+    left: 520px;
+    top: 10px;
+}
