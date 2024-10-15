@@ -1,11 +1,15 @@
 body {
-    background-color: antiquewhite;
+    background-color: aliceblue;
 }
 
 canvas {
     image-rendering: crisp-edges;
     image-rendering: pixelated;
-
+    border: 2.5px solid #000000;
+    margin-left: 0px;
+    margin-top: 0px;
+    padding-left: 0px;
+    padding-top: 0px;
 
 }
 
@@ -13,4 +17,17 @@ canvas {
     position: fixed;
     left: 520px;
     top: 10px;
+    border: 3px solid #000000;
+    padding: 5px;
+    border-radius: 10px;
+    background-color: antiquewhite;
+}
+
+div {
+    line-height: 30px;
+}
+
+input {
+    height: 20px;
+    vertical-align: middle;
 }

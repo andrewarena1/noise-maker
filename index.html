@@ -2,26 +2,30 @@
 <html>
 
 <head>
-    <script src="Onscreen.js"></script>
+    <script src="Onscreen.js" type="module"></script>
+    <script src="OffscreenRendering.js" type="module"></script>
+    <script src="NoiseFuncs.js" type="module"></script>
+    <script src="NoiseState.js" type="module"></script>
     <script src="jquery-3.7.1.js"></script>
     <link rel="stylesheet" href="project.css">
 </head>
 
-<body onload=initCanvas()>
-    <canvas id="canv"></canvas><br>
+<body>
+    <canvas id="canv" width="250px" height="250px"></canvas><br>
     <div id="settings">
-        <input type="radio" id="perlinNoise" name="noiseType" checked="checked">
-        <label for="goodNoise"> 2D Perlin Noise</label>
-        <input type="radio" id="goodNoise" name="noiseType">
-        <label for="goodNoise"> 2D Smooth Noise</label>
-        <input type="radio" id="whiteNoise" name="noiseType">
-        <label for="whiteNoise"> White Noise</label> <br>
+        <h5>Make Some Noise!</h5>
+        <select name="noiseType" id="noiseType" class="updates-noise">
+            <option id="2DPerlin"> 2D Perlin</option>
+            <option id="2DSmooth"> 2D Smooth</option>
+            <option id="whiteNoise"> White Noise</option>
+        </select>
 
-        <label for="fractalSum">Fractal Sum </label>
-        <input type="number" id="fractalSum" min="0" max="10" placeholder="1">
-        <label for="fractalSum"> layers</label><br>
-
-
+        <input type="number" id="fractalSum" class="updates-noise" min="0" max="10" placeholder="1"> layer(s) <br>
+        Seed <input type="text" id="seed" class="updates-noise" placeholder="0"><br>
+        Grid Size <input type="text" id="grid" class="updates-noise" size="3" placeholder="10"> points<br>
+        Period <input type="text" id="period" class="updates-noise" size="4" placeholder="250"> px<br>
+        Resolution <input type="text" id="width" class="updates-noise" size="4" placeholder="250"> x <input type="text"
+            id="height" size="4" placeholder="250" disabled> px<br>
 
         <label for="anim">animate =></label>
         <input type="checkbox" id="anim" width="50px" height="50px"><br>
@@ -29,24 +33,13 @@
         <input type="range" id="framerate" min="1" max="90" value="45" style="visibility: visible;">
         <label id="rate_label" for="framerate">45 fps</label><br>
 
-        <label for="seed">Seed </label>
-        <input type="text" id="seed" placeholder="0"><br>
-
-        <label for="resX">Resolution </label>
-        <input type="text" id="resX" size="4" placeholder="250"> x <input type="text" id="resY" size="4"
-            placeholder="250" disabled>
-        <label for="resY">px</label><br>
-
-        <label for="grid">Grid Size</label>
-        <input type="text" id="grid" size="3" placeholder="10">
-        <label for="grid">points</label><br>
 
         <label for="gridlines">Display Grid</label>
-        <input type="checkbox" id="gridlines"><br>
+        <input type="checkbox" id="gridlines"><br><br>
 
-        <label for="period">Period</label>
-        <input type="text" id="period" size="4" placeholder="250">
-        <label for="period">px</label><br>
+
+
+
     </div>
 
 
