@@ -15,7 +15,7 @@ function initCanvas() {
 
         settingsUpdated();
         //DOM LISTENERS
-        $("#fractalSum").on("change", () => {
+        $("#fractalSum").on("change", (e) => {
             fractalSum(e.target.value);
         });
 
@@ -105,27 +105,29 @@ function initCanvas() {
             var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
             var pixels = new Uint32Array(pix_8.buffer);
             var data = new ImageData(pix_8, canv.width, canv.height);
-            var span = canv.width / grid;
 
             if (noise_type == "perlinNoise") {
-                perlinGen(pixels, span);
+                perlinGen(pixels, grid);
+                greyScale(pixels, -1, 1);
             }
             else if (noise_type == "goodNoise") {
-                goodNoise1D(pixels, span);
+                goodNoise1D(pixels);
+                greyScale(pixels, 0, 1);
             } else if (noise_type == "whiteNoise") {
-                whiteNoise(pixels, span);
+                whiteNoise(pixels);
+                greyScale(pixels, 0, 1);
             }
-            greyScale(pixels);
             return data;
         }
-        function whiteNoise(pixels, span) {
+        function whiteNoise(pixels) {
             for (var i = 0; i < pixels.length; i++) {
                 pixels[i] = 0xFF * nextRandom();
             }
             return pixels;
         }
 
-        function goodNoise1D(pixels, span) {
+        function goodNoise1D(pixels, grid) {
+            var span = canv.width / grid;
             var values = new Array(grid);
             for (let i = 0; i < grid; i++) {
                 let inner = new Array(grid);
@@ -148,8 +150,8 @@ function initCanvas() {
             return pixels;
         }
 
-        function perlinGen(pixels, span) {
-            var abc = pixels;
+        function perlinGen(pixels, grid) {
+            var span = canv.width / grid;
             var gradients = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // gradient options
             var g = []; // gradient grid
             for (var i = 0; i < grid; i++) {
@@ -162,10 +164,9 @@ function initCanvas() {
 
             for (var j = 0; j < canv.height; j++) {
                 for (var i = 0; i < canv.width; i++) {
-                    abc[i + canv.width * j] = 0xFF * (perlin2d(i / span, j / span, g) + 1) * 0.5; //call perlin 2d at each point
+                    pixels[i + canv.width * j] = 0xFF * perlin2d(i / span, j / span, g); //call perlin 2d at each point
                 }
             }
-            console.log(abc);
             return pixels;
         }
         function perlin2d(x, y, g) {
@@ -184,6 +185,23 @@ function initCanvas() {
             return smoothstepRemap(t_y, upper_x, lower_x);
         }
 
+        //Fractal sum (PERLIN only)
+        function fractalSum(num) {
+            nextRandom = splitmix32(seed);
+            var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
+            var sum = new Uint32Array(pix_8.buffer);
+            for (var i = 0; i < num; i++) {
+                var pixels = new Uint32Array(canv.width * canv.height);
+                pixels = perlinGen(pixels, grid * Math.pow(2, i));
+                greyScale(pixels, -1, Math.pow(2, i + 2) - 1);
+                for (var j = 0; j < sum.length; j++) {
+                    sum[j] += pixels[j];
+                }
+            }
+            ctx.putImageData(new ImageData(pix_8, canv.width, canv.height), 0, 0);
+        }
+
+        //helper functions
         function lerp(t, lower, upper) {
             return lower + (upper - lower) * t;
         }
@@ -196,17 +214,22 @@ function initCanvas() {
             return lerp(t_remap_step, lower, upper);
         }
 
-        function greyScale(pixels) {
+        function greyScale(pixels, min, max) {
+            var scale = 1 / (max - min);
+            var shift = -1 * min
             for (let i = 0; i < pixels.length; i++) {
+                pixels[i] = (pixels[i] + 0xFF * shift) * scale;
                 pixels[i] *= 0x1000000;
             }
         }
-        function redScale(pixels) {
+        function redScale(pixels, min, max) {
+            var scale = 1 / (max - min);
+            var shift = -1 * min
             for (let i = 0; i < pixels.length; i++) {
-                pixels[i] = 0xFF000000 + (2 * pixels[i] % 0xFF) * 0x10000 + (3 * pixels[i] % 0xFF) * 0x100 + (5 * pixels[i] % 0xFF) * pixels[i];
+                pixels[i] = (pixels[i] + 0xFF * shift) * scale;
+                pixels[i] = pixels[i] * 0x1000000 + (pixels[i] % 0xFF);
             }
         }
-
     } else {
         alert("Web Worker is Not Supported: use a more modern browser")
     }
