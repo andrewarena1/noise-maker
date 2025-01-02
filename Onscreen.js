@@ -15,6 +15,7 @@ function initCanvas() {
     settingsUpdated();
     //DOM LISTENERS
     $("#fractalSum").on("change", (e) => {
+        console.log(e.target.value);
         fractalSum(noise_type, e.target.value);
     });
 
@@ -84,6 +85,7 @@ function initCanvas() {
     });
     //DOM-RELATED FUNCTIONS
     function settingsUpdated() {
+        $("#fractalSum")[0].value = 1;
         ctx.clearRect(0, 0, canv.width, canv.height);
         nextRandom = splitmix32(seed);
         noise = newNoise();
@@ -188,18 +190,21 @@ function initCanvas() {
     /** Perform a fractal sum of the noise -- iterately double frequency and halve amplitude, and sum the results.
     */
     function fractalSum(func, num) {
+        if (num == 1)
+            return ctx.putImageData(newNoise(), 0, 0);
         nextRandom = splitmix32(seed);
-        var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
-        var sum = new Uint32Array(pix_8.buffer);
+        var sum = [];
+        for (var i = 0; i < canv.width * canv.height; ++i) sum.push(0);
+        var res;
+
         for (var i = 0; i < num; i++) {
-            var pixels = new Uint32Array(canv.width * canv.height);
-            pixels = func(grid * Math.pow(2, i));
-            greyScale(pixels, 0, Math.pow(2, i + 2));
-            for (var j = 0; j < sum.length; j++) {
-                sum[j] += pixels[j];
+            res = func(grid * Math.pow(2, i));
+            for (var j = 0; j < canv.width * canv.height; j++) {
+                sum[j] += res[j] / Math.pow(2, i + 1);
             }
+            console.log(sum);
         }
-        ctx.putImageData(new ImageData(pix_8, canv.width, canv.height), 0, 0);
+        ctx.putImageData(greyScale(sum, 0, 1), 0, 0);
     }
 
     //helper functions
@@ -215,7 +220,7 @@ function initCanvas() {
         return lerp(t_remap_step, lower, upper);
     }
 
-    /** transform array of ints between [min, max] to greyscaled image data.
+    /** transform array of ints between [min, max] to greyscaled image data. //TODO use percieved brightness?
      * 
      * @precondition min != max, arr.length = canv.width*canv.height.
      * @returns greyscaled image data representing the input arr. 
@@ -223,12 +228,12 @@ function initCanvas() {
     function greyScale(arr, min, max) {
         var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
         var pixels = new Uint32Array(pix_8.buffer);
-
+        var val;
         var scale = 1 / (max - min);
         var shift = -1 * min
         for (let i = 0; i < arr.length; i++) {
-            console.log(arr[i]);
-            pixels[i] = (arr[i] + shift) * scale * 0xFF000000;
+            val = Math.round(0xFF * (arr[i] + shift) * scale);
+            pixels[i] = 0xFF000000 + (val << 8) + (val << 16) + val;
         }
         return new ImageData(pix_8, canv.width, canv.height);
     }
