@@ -86,7 +86,6 @@ function initCanvas() {
     //DOM-RELATED FUNCTIONS
     function settingsUpdated() {
         $("#fractalSum")[0].value = 1;
-        ctx.clearRect(0, 0, canv.width, canv.height);
         nextRandom = splitmix32(seed);
         noise = newNoise();
         noise2 = noise;
@@ -191,7 +190,7 @@ function initCanvas() {
     */
     function fractalSum(func, num) {
         if (num == 1)
-            return ctx.putImageData(newNoise(), 0, 0);
+            return settingsUpdated();
         nextRandom = splitmix32(seed);
         var sum = [];
         for (var i = 0; i < canv.width * canv.height; ++i) sum.push(0);
