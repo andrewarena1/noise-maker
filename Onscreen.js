@@ -1,237 +1,244 @@
 function initCanvas() {
-    if (window.Worker) {
-        var canv = document.getElementById("canv");
-        canv.width = canv.height = 250;
-        canv.style = "border:2px solid #000000";
-        canv.style.width = canv.style.height = "500px";
-        var ctx = canv.getContext("2d");
-        var seed = 0;
-        var noise, noise2, interval_id;
-        var period = canv.width;
-        var grid = 10;
-        var noise_type = $("input[type='radio']:first").attr("id"); // first radio button is noise type
-        var milli_rate = 100 / 45;
-        var t1, t2, count = 0;
+    var canv = document.getElementById("canv");
+    canv.width = canv.height = 250;
+    canv.style = "border:2px solid #000000";
+    canv.style.width = canv.style.height = "500px";
+    var ctx = canv.getContext("2d");
+    var seed = 0;
+    var noise, noise2, interval_id;
+    var period = canv.width;
+    var grid = 10;
+    var noise_type = perlinGen; //NOTE must change if perlin is not first noise type in radio
+    var milli_rate = 100 / 45;
+    var t1, t2, count = 0;
 
-        settingsUpdated();
-        //DOM LISTENERS
-        $("#fractalSum").on("change", (e) => {
-            fractalSum(e.target.value);
-        });
+    settingsUpdated();
+    //DOM LISTENERS
+    $("#fractalSum").on("change", (e) => {
+        fractalSum(noise_type, e.target.value);
+    });
 
-        $("#anim").on("click", () => {
-            if (interval_id) { //toggle OFF
-                clearInterval(interval_id);
-                interval_id = null;
-                document.getElementById("framerate").style.visibility = "visible";
-            } else { //toggle ON
-                count = 1;
-                t1 = window.performance.now();
-                interval_id = setInterval(repeatFunc, milli_rate);
-                document.getElementById("framerate").style.visibility = "hidden";
-            }
-        });
-
-        $("#framerate").on("input", (e) => {
-            let framerate = e.target.value;
-            milli_rate = 1000 / framerate;
-            document.getElementById("rate_label").innerText = `${framerate} fps`;
-        });
-
-        $("#seed").on("change", (e) => {
-            seed = e.target.value;
-            settingsUpdated();
-        });
-
-        $("#resX").on("change", (e) => {
-            canv.width = e.target.value;
-            canv.height = e.target.value;
-            document.querySelector("#resY").value = e.target.value;
-            settingsUpdated();
-        });
-
-        $("#grid").on("change", (e) => {
-            grid = e.target.value;
-            settingsUpdated();
-        });
-
-        $("#gridlines").on("change", (e) => {
-            if (e.target.checked == true) {
-                displayGridlines(canv_data);
-                ctx.putImageData(canv_img, 0, 0);
-            } else {
-                ctx.putImageData(noise, 0, 0);
-            }
-
-        })
-
-        $("input[type='radio'").on("click", (e) => {
-            noise_type = e.target.id;
-            settingsUpdated();
-        });
-
-        $("#period").on("change", (e) => {
-            period = e.target.value;
-            settingsUpdated();
-        });
-        //DOM-RELATED FUNCTIONS
-        function settingsUpdated() {
-            ctx.clearRect(0, 0, canv.width, canv.height);
-            nextRandom = splitmix32(seed);
-            noise = newNoise();
-            noise2 = noise;
-            ctx.putImageData(noise, 0, 0);
-        }
-
-        function repeatFunc() {
+    $("#anim").on("click", () => {
+        if (interval_id) { //toggle OFF
+            clearInterval(interval_id);
+            interval_id = null;
+            document.getElementById("framerate").style.visibility = "visible";
+        } else { //toggle ON
+            count = 1;
             t1 = window.performance.now();
-            noise = newNoise();
+            interval_id = setInterval(repeatFunc, milli_rate);
+            document.getElementById("framerate").style.visibility = "hidden";
+        }
+    });
+
+    $("#framerate").on("input", (e) => {
+        let framerate = e.target.value;
+        milli_rate = 1000 / framerate;
+        document.getElementById("rate_label").innerText = `${framerate} fps`;
+    });
+
+    $("#seed").on("change", (e) => {
+        seed = e.target.value;
+        settingsUpdated();
+    });
+
+    $("#resX").on("change", (e) => {
+        canv.width = e.target.value;
+        canv.height = e.target.value;
+        document.querySelector("#resY").value = e.target.value;
+        settingsUpdated();
+    });
+
+    $("#grid").on("change", (e) => {
+        grid = e.target.value;
+        settingsUpdated();
+    });
+
+    $("#gridlines").on("change", (e) => {
+        if (e.target.checked == true) {
+            displayGridlines(canv_data);
+            ctx.putImageData(canv_img, 0, 0);
+        } else {
             ctx.putImageData(noise, 0, 0);
-            t2 = window.performance.now();
-            console.log(t2 - t1);
         }
 
-        function displayGridlines(canv_data) {
-            var canv_img = ctx.getImageData(0, 0, canv.width, canv.height);
-            var canv_data = new Uint32Array(canv_img.data.buffer);
-            for (var i = 0; i < grid; i++) {
-                for (var j = 0; j < grid; j++) {
-                    canv_data[j / grid * canv.width + i / grid * canv.width * canv.width] = 0xFF000000;
-                }
-            }
-        }
-        //NOISE FUNCTIONS
-        function newNoise() {
-            var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
-            var pixels = new Uint32Array(pix_8.buffer);
-            var data = new ImageData(pix_8, canv.width, canv.height);
+    })
 
-            if (noise_type == "perlinNoise") {
-                perlinGen(pixels, grid);
-                greyScale(pixels, -1, 1);
-            }
-            else if (noise_type == "goodNoise") {
-                goodNoise1D(pixels);
-                greyScale(pixels, 0, 1);
-            } else if (noise_type == "whiteNoise") {
-                whiteNoise(pixels);
-                greyScale(pixels, 0, 1);
-            }
-            return data;
+    $("input[type='radio'").on("click", (e) => {
+        switch (e.target.id) {
+            case "perlin":
+                noise_type = perlinGen;
+                break;
+            case "smooth":
+                noise_type = smoothGen;
+                break;
+            case "white":
+                noise_type = whiteGen;
         }
-        function whiteNoise(pixels) {
-            for (var i = 0; i < pixels.length; i++) {
-                pixels[i] = 0xFF * nextRandom();
-            }
-            return pixels;
-        }
+        settingsUpdated();
+    });
 
-        function goodNoise1D(pixels, grid) {
-            var span = canv.width / grid;
-            var values = new Array(grid);
-            for (let i = 0; i < grid; i++) {
-                let inner = new Array(grid);
-                for (let j = 0; j < grid; j++) {
-                    inner[j] = 0xFF * nextRandom();
-                }
-                values[i] = inner;
-            }
-            for (let i = 0; i < canv.width * canv.width; i++) {
-                let a1 = (i % canv.width) / span;
-                let b1 = Math.floor(a1);
-                let x = a1 - b1;
-                let a2 = (i / canv.width) / span;
-                let b2 = Math.floor(a2);
-                let y = a2 - b2;
-                let lerp_lower_x = smoothstepRemap(x, values[b2 % grid][b1 % grid], values[b2 % grid][(b1 + 1) % grid]);
-                let lerp_higher_x = smoothstepRemap(x, values[(b2 + 1) % grid][b1 % grid], values[(b2 + 1) % grid][(b1 + 1) % grid]);
-                pixels[i] = smoothstepRemap(y, lerp_lower_x, lerp_higher_x);
-            }
-            return pixels;
-        }
+    $("#period").on("change", (e) => {
+        period = e.target.value;
+        settingsUpdated();
+    });
+    //DOM-RELATED FUNCTIONS
+    function settingsUpdated() {
+        ctx.clearRect(0, 0, canv.width, canv.height);
+        nextRandom = splitmix32(seed);
+        noise = newNoise();
+        noise2 = noise;
+        ctx.putImageData(noise, 0, 0);
+    }
 
-        function perlinGen(pixels, grid) {
-            var span = canv.width / grid;
-            var gradients = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // gradient options
-            var g = []; // gradient grid
-            for (var i = 0; i < grid; i++) {
-                let inner = [];
-                for (let j = 0; j < grid; j++) {
-                    inner[j] = gradients[Math.floor(nextRandom() * 4)];  //randomize gradients at lattice points
-                }
-                g[i] = inner;
-            }
+    function repeatFunc() {
+        t1 = window.performance.now();
+        noise = newNoise();
+        ctx.putImageData(noise, 0, 0);
+        t2 = window.performance.now();
+        console.log(t2 - t1);
+    }
 
-            for (var j = 0; j < canv.height; j++) {
-                for (var i = 0; i < canv.width; i++) {
-                    pixels[i + canv.width * j] = 0xFF * perlin2d(i / span, j / span, g); //call perlin 2d at each point
-                }
+    function displayGridlines(canv_data) {
+        var canv_img = ctx.getImageData(0, 0, canv.width, canv.height);
+        var canv_data = new Uint32Array(canv_img.data.buffer);
+        for (var i = 0; i < grid; i++) {
+            for (var j = 0; j < grid; j++) {
+                canv_data[j / grid * canv.width + i / grid * canv.width * canv.width] = 0xFF000000;
             }
-            return pixels;
         }
-        function perlin2d(x, y, g) {
-            var fl_x = Math.floor(x);
-            var t_x = x - fl_x;
-            var fl_y = Math.floor(y);
-            var t_y = y - fl_y;
-            var v = [];
-            for (var i = 0; i <= 1; i++) {
-                for (var j = 0; j <= 1; j++) {
-                    v[2 * i + j] = g[(i + fl_x) % grid][(j + fl_y) % grid][0] * (x - (fl_x + i)) + g[(i + fl_x) % grid][(j + fl_y) % grid][1] * (y - (fl_y + j));
-                }
-            }
-            var upper_x = smoothstepRemap(t_x, v[0], v[2]);
-            var lower_x = smoothstepRemap(t_x, v[1], v[3]);
-            return smoothstepRemap(t_y, upper_x, lower_x);
-        }
+    }
+    //NOISE FUNCTIONS
 
-        //Fractal sum (PERLIN only)
-        function fractalSum(num) {
-            nextRandom = splitmix32(seed);
-            var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
-            var sum = new Uint32Array(pix_8.buffer);
-            for (var i = 0; i < num; i++) {
-                var pixels = new Uint32Array(canv.width * canv.height);
-                pixels = perlinGen(pixels, grid * Math.pow(2, i));
-                greyScale(pixels, -1, Math.pow(2, i + 2) - 1);
-                for (var j = 0; j < sum.length; j++) {
-                    sum[j] += pixels[j];
-                }
+    /** returns the image data of the noise of currently selected type */
+    function newNoise() {
+        return greyScale(noise_type(grid), 0, 1);
+    }
+    /** generate white noise. returns array of pixels with values from 0 to 1. */
+    function whiteGen() {
+        var pixels = new Array(canv.width * canv.height);
+        for (var i = 0; i < pixels.length; i++) {
+            pixels[i] = nextRandom();
+        }
+        return pixels;
+    }
+    /** generate smooth 2D noise. returns array of pixels with values from 0 to 1. */
+    function smoothGen(grid) {
+        var pixels = new Array(canv.width * canv.height);
+        var span = canv.width / grid;
+        var values = new Array(grid);
+        for (let i = 0; i < grid; i++) {
+            let inner = new Array(grid);
+            for (let j = 0; j < grid; j++) {
+                inner[j] = nextRandom();
             }
-            ctx.putImageData(new ImageData(pix_8, canv.width, canv.height), 0, 0);
+            values[i] = inner;
+        }
+        for (let i = 0; i < canv.width * canv.width; i++) {
+            let a1 = (i % canv.width) / span;
+            let b1 = Math.floor(a1);
+            let x = a1 - b1;
+            let a2 = (i / canv.width) / span;
+            let b2 = Math.floor(a2);
+            let y = a2 - b2;
+            let lerp_lower_x = smoothstepRemap(x, values[b2 % grid][b1 % grid], values[b2 % grid][(b1 + 1) % grid]);
+            let lerp_higher_x = smoothstepRemap(x, values[(b2 + 1) % grid][b1 % grid], values[(b2 + 1) % grid][(b1 + 1) % grid]);
+            pixels[i] = smoothstepRemap(y, lerp_lower_x, lerp_higher_x);
+        }
+        return pixels;
+    }
+    /** generate white noise. returns array of pixels with values from 0 to 1. */
+    function perlinGen(grid) {
+        var pixels = new Array(canv.width * canv.height);
+        var span = canv.width / grid;
+        var gradients = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // gradient options
+        var g = []; // gradient grid
+        for (var i = 0; i < grid; i++) {
+            let inner = [];
+            for (let j = 0; j < grid; j++) {
+                inner[j] = gradients[Math.floor(nextRandom() * 4)];  //randomize gradients at lattice points
+            }
+            g[i] = inner;
         }
 
-        //helper functions
-        function lerp(t, lower, upper) {
-            return lower + (upper - lower) * t;
+        for (var j = 0; j < canv.height; j++) {
+            for (var i = 0; i < canv.width; i++) {
+                pixels[i + canv.width * j] = (perlin2d(i / span, j / span, g) + 1) / 2; //call perlin 2d at each point
+            }
         }
-        function cosineRemap(t, lower, upper) {
-            let t_remap_cos = (1 - Math.cos(t * Math.PI)) * 0.5;
-            return lerp(t_remap_cos, lower, upper);
+        return pixels;
+    }
+    /** calculate perlin value for point x, y in grid g */
+    function perlin2d(x, y, g) {
+        var fl_x = Math.floor(x);
+        var t_x = x - fl_x;
+        var fl_y = Math.floor(y);
+        var t_y = y - fl_y;
+        var v = [];
+        for (var i = 0; i <= 1; i++) {
+            for (var j = 0; j <= 1; j++) {
+                v[2 * i + j] = g[(i + fl_x) % grid][(j + fl_y) % grid][0] * (x - (fl_x + i)) + g[(i + fl_x) % grid][(j + fl_y) % grid][1] * (y - (fl_y + j));
+            }
         }
-        function smoothstepRemap(t, lower, upper) {
-            let t_remap_step = t * t * (3 - 2 * t);
-            return lerp(t_remap_step, lower, upper);
-        }
+        var upper_x = smoothstepRemap(t_x, v[0], v[2]);
+        var lower_x = smoothstepRemap(t_x, v[1], v[3]);
+        return smoothstepRemap(t_y, upper_x, lower_x);
+    }
 
-        function greyScale(pixels, min, max) {
-            var scale = 1 / (max - min);
-            var shift = -1 * min
-            for (let i = 0; i < pixels.length; i++) {
-                pixels[i] = (pixels[i] + 0xFF * shift) * scale;
-                pixels[i] *= 0x1000000;
+    /** Perform a fractal sum of the noise -- iterately double frequency and halve amplitude, and sum the results.
+    */
+    function fractalSum(func, num) {
+        nextRandom = splitmix32(seed);
+        var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
+        var sum = new Uint32Array(pix_8.buffer);
+        for (var i = 0; i < num; i++) {
+            var pixels = new Uint32Array(canv.width * canv.height);
+            pixels = func(grid * Math.pow(2, i));
+            greyScale(pixels, 0, Math.pow(2, i + 2));
+            for (var j = 0; j < sum.length; j++) {
+                sum[j] += pixels[j];
             }
         }
-        function redScale(pixels, min, max) {
-            var scale = 1 / (max - min);
-            var shift = -1 * min
-            for (let i = 0; i < pixels.length; i++) {
-                pixels[i] = (pixels[i] + 0xFF * shift) * scale;
-                pixels[i] = pixels[i] * 0x1000000 + (pixels[i] % 0xFF);
-            }
+        ctx.putImageData(new ImageData(pix_8, canv.width, canv.height), 0, 0);
+    }
+
+    //helper functions
+    function lerp(t, lower, upper) {
+        return lower + (upper - lower) * t;
+    }
+    function cosineRemap(t, lower, upper) {
+        let t_remap_cos = (1 - Math.cos(t * Math.PI)) * 0.5;
+        return lerp(t_remap_cos, lower, upper);
+    }
+    function smoothstepRemap(t, lower, upper) {
+        let t_remap_step = t * t * (3 - 2 * t);
+        return lerp(t_remap_step, lower, upper);
+    }
+
+    /** transform array of ints between [min, max] to greyscaled image data.
+     * 
+     * @precondition min != max, arr.length = canv.width*canv.height.
+     * @returns greyscaled image data representing the input arr. 
+     */
+    function greyScale(arr, min, max) {
+        var pix_8 = new Uint8ClampedArray(canv.width * canv.height * 4);
+        var pixels = new Uint32Array(pix_8.buffer);
+
+        var scale = 1 / (max - min);
+        var shift = -1 * min
+        for (let i = 0; i < arr.length; i++) {
+            console.log(arr[i]);
+            pixels[i] = (arr[i] + shift) * scale * 0xFF000000;
         }
-    } else {
-        alert("Web Worker is Not Supported: use a more modern browser")
+        return new ImageData(pix_8, canv.width, canv.height);
+    }
+    function redScale(pixels, min, max) {
+        var scale = 1 / (max - min);
+        var shift = -1 * min
+        for (let i = 0; i < pixels.length; i++) {
+            pixels[i] = (pixels[i] + shift) * scale;
+            pixels[i] = pixels[i] * 0xFF000000 + (pixels[i] % 0xFF);
+        }
     }
 }
 
