@@ -39,15 +39,6 @@ function initCanvas() {
         settingsUpdated();
     });
 
-    $("#gridlines").on("change", (e) => {
-        if (e.target.checked == true) {
-            displayGridlines(canv_data);
-            ctx.putImageData(canv_img, 0, 0);
-        } else {
-            ctx.putImageData(noise, 0, 0);
-        }
-
-    })
 
     $("input[type='radio'").on("click", (e) => {
         switch (e.target.id) {
