@@ -11,32 +11,16 @@ function initCanvas() {
     var noise_type = perlinGen; //NOTE must change if perlin is not first noise type in radio
     var milli_rate = 100 / 45;
     var t1, t2, count = 0;
-
     settingsUpdated();
+
     //DOM LISTENERS
     $("#fractalSum").on("change", (e) => {
-        console.log(e.target.value);
-        fractalSum(noise_type, e.target.value);
-    });
-
-    $("#anim").on("click", () => {
-        if (interval_id) { //toggle OFF
-            clearInterval(interval_id);
-            interval_id = null;
-            document.getElementById("framerate").style.visibility = "visible";
-        } else { //toggle ON
-            count = 1;
-            t1 = window.performance.now();
-            interval_id = setInterval(repeatFunc, milli_rate);
-            document.getElementById("framerate").style.visibility = "hidden";
+        if (e.target.value != 1) {
+            $("#fractalSumLabel")[0].text = "layers";
         }
+        fractalSum(noise_type, grid, e.target.value);
     });
 
-    $("#framerate").on("input", (e) => {
-        let framerate = e.target.value;
-        milli_rate = 1000 / framerate;
-        document.getElementById("rate_label").innerText = `${framerate} fps`;
-    });
 
     $("#seed").on("change", (e) => {
         seed = e.target.value;
@@ -79,10 +63,6 @@ function initCanvas() {
         settingsUpdated();
     });
 
-    $("#period").on("change", (e) => {
-        period = e.target.value;
-        settingsUpdated();
-    });
     //DOM-RELATED FUNCTIONS
     function settingsUpdated() {
         $("#fractalSum")[0].value = 1;
@@ -92,23 +72,6 @@ function initCanvas() {
         ctx.putImageData(noise, 0, 0);
     }
 
-    function repeatFunc() {
-        t1 = window.performance.now();
-        noise = newNoise();
-        ctx.putImageData(noise, 0, 0);
-        t2 = window.performance.now();
-        console.log(t2 - t1);
-    }
-
-    function displayGridlines(canv_data) {
-        var canv_img = ctx.getImageData(0, 0, canv.width, canv.height);
-        var canv_data = new Uint32Array(canv_img.data.buffer);
-        for (var i = 0; i < grid; i++) {
-            for (var j = 0; j < grid; j++) {
-                canv_data[j / grid * canv.width + i / grid * canv.width * canv.width] = 0xFF000000;
-            }
-        }
-    }
     //NOISE FUNCTIONS
 
     /** returns the image data of the noise of currently selected type */
@@ -188,7 +151,7 @@ function initCanvas() {
 
     /** Perform a fractal sum of the noise -- iterately double frequency and halve amplitude, and sum the results.
     */
-    function fractalSum(func, num) {
+    function fractalSum(func, grid, num) {
         if (num == 1)
             return settingsUpdated();
         nextRandom = splitmix32(seed);
@@ -201,22 +164,8 @@ function initCanvas() {
             for (var j = 0; j < canv.width * canv.height; j++) {
                 sum[j] += res[j] / Math.pow(2, i + 1);
             }
-            console.log(sum);
         }
         ctx.putImageData(greyScale(sum, 0, 1), 0, 0);
-    }
-
-    //helper functions
-    function lerp(t, lower, upper) {
-        return lower + (upper - lower) * t;
-    }
-    function cosineRemap(t, lower, upper) {
-        let t_remap_cos = (1 - Math.cos(t * Math.PI)) * 0.5;
-        return lerp(t_remap_cos, lower, upper);
-    }
-    function smoothstepRemap(t, lower, upper) {
-        let t_remap_step = t * t * (3 - 2 * t);
-        return lerp(t_remap_step, lower, upper);
     }
 
     /** transform array of ints between [min, max] to greyscaled image data. //TODO use percieved brightness?
@@ -244,6 +193,19 @@ function initCanvas() {
             pixels[i] = pixels[i] * 0xFF000000 + (pixels[i] % 0xFF);
         }
     }
+}
+
+//helper functions
+function lerp(t, lower, upper) {
+    return lower + (upper - lower) * t;
+}
+function cosineRemap(t, lower, upper) {
+    let t_remap_cos = (1 - Math.cos(t * Math.PI)) * 0.5;
+    return lerp(t_remap_cos, lower, upper);
+}
+function smoothstepRemap(t, lower, upper) {
+    let t_remap_step = t * t * (3 - 2 * t);
+    return lerp(t_remap_step, lower, upper);
 }
 
 function splitmix32(a) {        //PRNG generator
