@@ -2,12 +2,13 @@
 <html>
 
 <head>
-    <script src="Onscreen.js"></script>
+    <script src="Accel.js"></script>
+    <script type="module" src="Onscreen.js"></script>
     <script src="jquery-3.7.1.js"></script>
     <link rel="stylesheet" href="project.css">
 </head>
 
-<body onload=initCanvas()>
+<body>
     <canvas id="canv"></canvas><br>
     <div id="settings">
         <input type="radio" id="perlin" name="noiseType" checked="checked">
@@ -24,7 +25,7 @@
         </select> <br>
 
         <label id="fractalSumLabel" for="fractalSum">Fractal Sum </label>
-        <input type="number" id="fractalSum" min="1" max="10" placeholder="1">
+        <input type="number" id="fractalSum" min="1" max="20" placeholder="1">
         <label for="fractalSum"> layer</label><br>
 
 
@@ -39,7 +40,6 @@
         <label for="grid">Grid Size</label>
         <input type="text" id="grid" size="3" placeholder="10">
         <label for="grid">points</label><br>
-
     </div>
 
 

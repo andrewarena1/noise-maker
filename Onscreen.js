@@ -1,9 +1,14 @@
-function initCanvas() {
+document.addEventListener("DOMContentLoaded", async () => {
+    const device = await requestDevice();
+    const shader_module = await fetchShader(device);
+    initCanvas(device, shader_module);
+});
+
+function initCanvas(device, shader_module) {
     var canv = document.getElementById("canv");
     canv.width = canv.height = 250;
     canv.style = "border:2px solid #000000";
-    canv.style.width = canv.style.height = "500px";
-    var ctx = canv.getContext("2d");
+    canv.style.width = canv.style.height = "750px";
     var seed = 0;
     var shader = greyScale;
     var noise, noise2, interval_id;
@@ -13,6 +18,9 @@ function initCanvas() {
     var noise_type = perlinGen; //NOTE must change if perlin is not first noise type in radio
     var milli_rate = 100 / 45;
     var t1, t2, count = 0;
+    var fractalMemo = [];
+    var nextRandom;
+    const context = initGPUContext(device);
     settingsUpdated();
 
     //DOM LISTENERS
@@ -24,7 +32,6 @@ function initCanvas() {
         fractal_iter = layers
         settingsUpdated()
     });
-
 
     $("#seed").on("change", (e) => {
         seed = e.target.value;
@@ -67,16 +74,18 @@ function initCanvas() {
 
     //DOM-RELATED FUNCTIONS
     function settingsUpdated() {
-        nextRandom = splitmix32(seed);
-        noise = newNoise()
-        noise2 = noise;
-        ctx.putImageData(noise, 0, 0);
+        runComputeShader(grid, splitmix32(seed), device, shader_module, context, fractal_iter);
+        // nextRandom = splitmix32(seed);
+        // noise = newNoise()
+        // noise2 = noise;
+        // ctx.putImageData(noise, 0, 0);
     }
 
     //NOISE FUNCTIONS
 
     /** returns the image data of the noise of currently selected type */
     function newNoise() {
+        fractalMemo = []
         return shader(fractalSum(noise_type, grid, fractal_iter), -1, 1);
     }
 
@@ -128,6 +137,7 @@ function initCanvas() {
             }
             g[i] = inner;
         }
+        console.log(g.flat().flat())
 
         for (var j = 0; j < canv.height; j++) {
             for (var i = 0; i < canv.width; i++) {
@@ -164,23 +174,24 @@ function initCanvas() {
      * returns the fractal summed noise values      
     */
     function fractalSum(noise_func, freq, num) {
-        var sum = [];
-        for (var i = 0; i < canv.width * canv.height; ++i) sum.push(0);
+        var sum;
         var res;
         var g;
         var start_amp = 1 / (1 - (1/2)**(num))
         var test_amp = 0;
-        for (var i = 0; i < num; i++) {
-            new_freq = freq * Math.pow(2, i); // double frequency
+        for (var i = fractalMemo.length; i < num; i++) {
+            const new_freq = freq * Math.pow(2, i); // double frequency
             res = noise_func(new_freq);
-            for (var j = 0; j < canv.width * canv.height; j++) {
-                sum[j] += res[j] * start_amp / Math.pow(2, i + 1);
-            }
+            if (fractalMemo.length > 0)
+                sum = res.map((val, idx) => fractalMemo[i-1][idx] + val * start_amp / Math.pow(2, i + 1));
+            else
+                sum = res.map(val => val * start_amp / Math.pow(2, i + 1));
             console.log(test_amp += start_amp / Math.pow(2, i + 1))
-
+            fractalMemo.push(sum)
         }
+        console.log(fractalMemo[fractalMemo.length - 1])
         // ctx.putImageData(shader(sum, -1, 1), 0, 0);
-        return sum;
+        return fractalMemo[fractalMemo.length - 1];
     }
 
     /** transform array of ints between [min, max] to greyscaled image data. //TODO use percieved brightness?
@@ -237,6 +248,14 @@ function initCanvas() {
     }
 }
 
+
+
+/*var gradients =
+                [[0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1],
+                [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
+                [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0]];*/
+
+
 //helper functions
 function lerp(t, lower, upper) {
     return lower + (upper - lower) * t;
@@ -261,9 +280,3 @@ function splitmix32(a) {        //PRNG generator
         return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
     }
 }
-
-
-/*var gradients =
-                [[0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1],
-                [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
-                [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0]];*/
