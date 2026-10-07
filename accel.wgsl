@@ -1,15 +1,21 @@
+
 struct Uniforms { 
     depth: u32, 
     grid: u32, 
     _pad2: u32, 
     _pad3: u32
 }
+
+const SQRT_2_2: f32 = sqrt(2.0) / 2.0f;
+const TWO_PI: f32 = 2*3.141592653589793;
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms; 
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) uv: vec2<f32>,
 };
+
 // Vertex shader: Generates a full-screen triangle automatically without vertex buffers
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
@@ -32,30 +38,32 @@ fn hash2(ix: u32, iy: u32, seed: u32) -> u32 {
 
 // Map a hash to one of 4 gradient vectors: (±1,0), (0,±1)
 fn grad(x: u32, y:u32, seed: u32) -> vec2f {
-    let h = hash2(x, y, seed) & 3u;
-    if h == 0u { return vec2f( 1.0,  0.0); }
-    if h == 1u { return vec2f(-1.0,  0.0); }
-    if h == 2u { return vec2f( 0.0,  1.0); }
-                 return vec2f( 0.0, -1.0);
+    let h = f32(hash2(x, y, seed)) / f32(0xFFFFFFFF);
+    return vec2f(cos(h*TWO_PI), sin(h*TWO_PI));
+    // if h == 0u { return vec2f( 1.0,  0.0); }
+    // if h == 1u { return vec2f(-1.0,  0.0); }
+    // if h == 2u { return vec2f( 0.0,  1.0); }
+    // if h == 3u { return vec2f( 0.0, -1.0); }
+    // if h == 4u { return vec2f( SQRT_2_2, -SQRT_2_2); }
+    // if h == 5u { return vec2f( SQRT_2_2, SQRT_2_2); }
+    // if h == 6u { return vec2f( -SQRT_2_2, SQRT_2_2); }
+    //              return vec2f( -SQRT_2_2, -SQRT_2_2);
+
 }
 
 fn perlin2d(xy: vec2f, grid: u32, seed:u32) -> f32 {
     let fl = floor(xy);
     let t =  xy - fl;
-    let lxuy = vec2<u32>(fl) % grid;  
-    let rxby = (vec2<u32>(fl) + 1u) % grid;
-    let s1 = grad(lxuy.x, lxuy.y, seed);
-    let s2 = grad(rxby.x, lxuy.y, seed);
-    let s3 = grad(lxuy.x, rxby.y, seed);
-    let s4 = grad(rxby.x, rxby.y, seed);
-    var v = array<f32, 4>(
-        dot(t, s1),
-        dot(t - vec2f(1.0, 0.0), s2),
-        dot(t - vec2f(0.0, 1.0), s3),
-        dot(t - vec2f(1.0, 1.0), s4)
-    );
-    let fade = smoothstep(vec2f(0.0, 0.0), vec2f(1.0, 1.0), t);
-    return mix(mix(v[0], v[1], fade.x), mix(v[2], v[3], fade.x), fade.y);
+    let ll = vec2<u32>(fl) % grid;  
+    let s1 = grad(ll.x, ll.y, seed);
+    let s2 = grad(ll.x + 1u, ll.y, seed);
+    let s3 = grad(ll.x, ll.y + 1u, seed);
+    let s4 = grad(ll.x + 1u, ll.y + 1u, seed);
+    var v1 = vec2f(dot(t, s1), dot(t - vec2f(0.0, 1.0), s3));
+    var v2 = vec2f(dot(t - vec2f(1.0, 0.0), s2), dot(t - vec2f(1.0), s4));
+    let fade = smoothstep(vec2f(0.0), vec2f(1.0), t);
+    let m = mix(v1, v2, fade.x);
+    return mix(m.x, m.y, fade.y);
 }
 
 @fragment
@@ -73,12 +81,3 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     let c = noise * 0.5 + 0.5;  // remap [-1,1] -> [0,1] for display
     return vec4<f32>(c, c, c, 1.0);
 }
-
-
-
-// @compute @workgroup_size(1)
-// fn main(@builtin(global_invocation_id) id: vec3u) {
-//     let index = id.x;
-//     let span = f32(constants.width) / f32(constants.grid);
-//     pixels[index] = sqrt(2.0f) * perlin2d(f32(index % constants.width) / span, f32(index / constants.width) / span, constants.grid);
-// }
